@@ -1,0 +1,1 @@
+& $PSScriptRoot\disable_areo_shake.ps1

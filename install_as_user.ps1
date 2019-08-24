@@ -13,5 +13,6 @@ else {
 }
 
 & $SetupDirectory\PowershellProfile\install.ps1
+& $SetupDirectory\UserRegistrySettings\install.ps1
 
 Pause
