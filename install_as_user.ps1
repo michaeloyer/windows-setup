@@ -15,4 +15,9 @@ else {
 & $SetupDirectory\PowershellProfile\install.ps1
 & $SetupDirectory\UserRegistrySettings\install.ps1
 
+if ((Test-Command git) -and (Test-Command ssh))
+{
+    & $SetupDirectory\GitSSH\install.ps1
+}
+
 Pause
