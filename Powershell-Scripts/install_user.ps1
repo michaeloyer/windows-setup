@@ -16,6 +16,7 @@ if (Test-Command git) {
     Add-GitGlobalConfig -Property color.branch.current -Value "yellow bold reverse"
     Add-GitGlobalConfig -Property color.branch.local -Value "yellow bold"
     Add-GitGlobalConfig -Property color.branch.remote -Value "green bold"
+    Add-GitGlobalConfig -Property core.editor -Value vim
 }
 else {
     Write-Host "Skipping Posh-Git installation and Git Config Installation" -ForegroundColor Yellow 
