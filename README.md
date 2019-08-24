@@ -1,2 +1,11 @@
 # windows-setup
-The Repo to keep track of changes to my Windows Setup. Scripts, Registry Edits, custom Terminal Commands etc.
+The Repo to keep track of changes to my Windows Setup. 
+
+Includes edits to Powershell, Git, and User Registry Settings.
+
+## Installation
+
+Run these scripts in the following order
+1. **install_admin.ps1** should be run as Administrator
+2. **install_user.ps1** 
+
