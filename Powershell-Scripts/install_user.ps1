@@ -20,3 +20,7 @@ if (Test-Command git) {
 else {
     Write-Host "Skipping Posh-Git installation and Git Config Installation" -ForegroundColor Yellow 
 }
+
+Install-ProfileImportModule -Path $PSScriptRoot\ProfileImport
+
+Pause

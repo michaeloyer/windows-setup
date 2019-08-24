@@ -1,3 +1,27 @@
+function Install-ProfileImportModule ([string]$Path) {
+    $Destination = ($env:PSModulePath -split ';' | Select-Object -First 1)
+    Copy-Item -Path $Path -Destination $Destination -Force -Recurse
+
+    Write-Host 'Copied ' -ForegroundColor Yellow -NoNewline
+    Write-Host 'ProfileImport' -ForegroundColor Green -NoNewline
+    Write-Host ' to User Modules folder ' -ForegroundColor Yellow -NoNewline
+    Write-Host $Destination -ForegroundColor Green
+
+    
+    $profileScript = Get-Content $profile
+    $importScriptLine = "Import-Module ProfileImport"
+    if ($profileScript -inotcontains $importScriptLine) {
+        $scriptLine = "Import-Module ProfileImport$([System.Environment]::NewLine)ImportForProfile"
+        Add-Content -Path $profile -Value `
+            "$([System.Environment]::NewLine)$scriptLine"
+
+        Write-Host 'Adding ' -ForegroundColor Yellow
+        Write-Host $scriptLine -ForegroundColor Magenta
+        Write-Host 'To Profile script: ' -ForegroundColor Yellow -NoNewline
+        Write-Host $profile -ForegroundColor Green
+    }
+}
+
 function Test-Command($cmd) {
 	$commandFound = (Get-Command $cmd -ErrorAction SilentlyContinue) -ne $null
 
