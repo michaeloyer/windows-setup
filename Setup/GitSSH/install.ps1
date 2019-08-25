@@ -1,4 +1,4 @@
-$sshPath = $(where.exe ssh)
+$sshPath = $(where.exe ssh | Select-Object -First 1)
 
 #Add To Process and User Environment Variable
 
