@@ -10,3 +10,7 @@ function ex ($Dir){
 }
 
 Set-Alias npp "C:\Program Files (x86)\Notepad++\notepad++.exe"
+
+Function cddev {
+	cd $Env:DEV
+}
