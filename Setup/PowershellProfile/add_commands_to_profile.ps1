@@ -2,7 +2,7 @@ $profileScript = Get-Content $profile
 
 $importScriptLine = "Import-Module ProfileImport"
 if ($profileScript -inotcontains $importScriptLine) {
-    $scriptLine = "Import-Module ProfileImport$([System.Environment]::NewLine)ImportForProfile"
+    $scriptLine = "Import-Module ProfileImport"
     Add-Content -Path $profile -Value `
         "$([System.Environment]::NewLine)$scriptLine"
 
