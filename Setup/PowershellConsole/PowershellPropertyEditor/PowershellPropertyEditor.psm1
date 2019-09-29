@@ -84,44 +84,172 @@ function WriteConsoleProperties([string]$ShortcutPath, [ConsoleProperties]$Prope
         $stream.WriteByte($byte)
     }
 
-    function WriteRGB([RGB]$rgb, $position) {
+    function WriteRGB([RGB]$rgb) {
         if ($rgb -ne $null) {
-            $stream.Position = $position
             $stream.WriteByte($rgb.Red)
             $stream.WriteByte($rgb.Green)
             $stream.WriteByte($rgb.Blue)
+            $stream.WriteByte(0)
+        }
+        else {
+            $stream.Position += 4
         }
     }
 
-    function WriteBackgroundAndText([BackgroundAndText]$bANDt, $position) {
+    function WriteBackgroundAndText([BackgroundAndText]$bANDt) {
         if ($bANDt -ne $null -and $bANDt.Background -ne [ColorTable]::Null -and $bANDt.Text -ne [ColorTable]::Null) {
-            WriteByte $bANDt.ToByte() -position $position
+            $stream.WriteByte($bANDt.ToByte())
         }
     }
 
-    WriteRGB $properties.Black -position 2175
-    WriteRGB $properties.DarkBlue -position 2179
-    WriteRGB $properties.DarkGreen -position 2183
-    WriteRGB $properties.DarkCyan -position 2187
-    WriteRGB $properties.DarkRed -position 2191
-    WriteRGB $properties.DarkMagenta -position 2195
-    WriteRGB $properties.DarkYellow -position 2199
-    WriteRGB $properties.Gray -position 2203
-    WriteRGB $properties.DarkGray -position 2207
-    WriteRGB $properties.Blue -position 2211
-    WriteRGB $properties.Green -position 2215
-    WriteRGB $properties.Cyan -position 2219
-    WriteRGB $properties.Red -position 2223
-    WriteRGB $properties.Magenta -position 2227
-    WriteRGB $properties.Yellow -position 2231
-    WriteRGB $properties.White -position 2235
-
-    if ($FontSize -ge 5 -and $FontSize -le 72) {
-        WriteByte $FontSize -position 2069
+    if (PositionAtColors($stream)) {
+        WriteRGB $properties.Black
+        WriteRGB $properties.DarkBlue
+        WriteRGB $properties.DarkGreen
+        WriteRGB $properties.DarkCyan
+        WriteRGB $properties.DarkRed
+        WriteRGB $properties.DarkMagenta
+        WriteRGB $properties.DarkYellow
+        WriteRGB $properties.Gray
+        WriteRGB $properties.DarkGray
+        WriteRGB $properties.Blue
+        WriteRGB $properties.Green
+        WriteRGB $properties.Cyan
+        WriteRGB $properties.Red
+        WriteRGB $properties.Magenta
+        WriteRGB $properties.Yellow
+        WriteRGB $properties.White
+    }
+    else {
+        Write-Host 'Color Table not found in the shortcut and was not updated' -ForegroundColor Red
     }
 
-    WriteBackgroundAndText $properties.Screen -position 2043
-    WriteBackgroundAndText $properties.Popup -position 2045 
+    if ($properties.FontSize -ge 5 -and $properties.FontSize -le 72) {
+        if (PositionAtFontSize($stream)) {
+            $stream.WriteByte($properties.FontSize)
+        }
+        else {
+           Write-Host 'Font Size not found in shortcut and was not updated' -ForegroundColor Red
+        }
+    }
+
+    if (PositionAtScreenBackgroundAndText($stream)) {
+        WriteBackgroundAndText $properties.Screen
+    }
+    else {
+        Write-Host 'Screen Background and Text not found in shortcut and was not updated' -ForegroundColor Red
+    }
+    
+    if (PositionAtPopupBackgroundAndText($stream)) {
+        WriteBackgroundAndText $properties.Popup
+    }
+    else {
+        Write-Host 'Popup Background and Text not found in shortcut and was not updated' -ForegroundColor Red
+    }
 
     $stream.Dispose()
+}
+
+function PositionAtColors($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 31)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 25)
+        {
+            $currentPosition = $stream.Position;
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 31) | Out-Null
+    } while ($arr[19] -ne 50 -or $arr[23] -ne 4)
+
+    return $true
+}
+
+function PositionAtFontSize($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 38)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 38) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
+}
+
+function PositionAtScreenBackgroundAndText($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 12)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 12) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
+}
+
+function PositionAtPopupBackgroundAndText($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 14)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 14) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
 }
