@@ -1,255 +1,186 @@
-Class RGB {
-    [byte]$Red
-    [byte]$Green
-    [byte]$Blue
-
-    RGB([object[]] $arr) { 
-        $this.Red = $arr[0]
-        $this.Green = $arr[1] 
-        $this.Blue = $arr[2]
-    }
-    
-    [string]ToString() { return "$this.Red, $this.Green, $this.Blue" }
+function Get-ColorTableNumber(
+    [ValidateSet(
+    "Black",
+    "DarkBlue",
+    "DarkGreen",
+    "DarkCyan",
+    "DarkRed",
+    "DarkMagenta",
+    "DarkYellow",
+    "Gray",
+    "DarkGray",
+    "Blue",
+    "Green",
+    "Cyan",
+    "Red",
+    "Magenta",
+    "Yellow",
+    "White")]$ColorTable)
+{
+    return @{
+        Black = 0;
+        DarkBlue = 1;
+        DarkGreen = 2;
+        DarkCyan = 3;
+        DarkRed = 4;
+        DarkMagenta = 5;
+        DarkYellow = 6;
+        Gray = 7;
+        DarkGray = 8;
+        Blue = 9;
+        Green = 10;
+        Cyan = 11;
+        Red = 12;
+        Magenta = 13;
+        Yellow = 14;
+        White = 15;
+    }[$ColorTable]
 }
 
-Enum ColorTable {
-    Null = -1
-    Black
-    DarkBlue
-    DarkGreen
-    DarkCyan
-    DarkRed
-    DarkMagenta
-    DarkYellow
-    Gray
-    DarkGray
-    Blue
-    Green
-    Cyan
-    Red
-    Magenta
-    Yellow
-    White
+
+function Get-ConsoleRegistryItem {
+    return Get-ItemProperty 'HKCU:Console'
 }
 
-Class BackgroundAndText {
-    [ColorTable]$Background = [ColorTable]::Null
-    [ColorTable]$Text = [ColorTable]::Null
+function Edit-Color(
+    [ValidateSet(
+    "Black",
+    "DarkBlue",
+    "DarkGreen",
+    "DarkCyan",
+    "DarkRed",
+    "DarkMagenta",
+    "DarkYellow",
+    "Gray",
+    "DarkGray",
+    "Blue",
+    "Green",
+    "Cyan",
+    "Red",
+    "Magenta",
+    "Yellow",
+    "White")]$ColorTable, 
+    [ValidateRange(0,255)][int]$Red = -1, 
+    [ValidateRange(0,255)][int]$Green = -1, 
+    [ValidateRange(0,255)][int]$Blue = -1) {
 
-    [byte]ToByte() { 
-        return (([byte]$this.Background -shl 4) + [byte]$this.Text) 
-    }
+    Edit-GlobalConsoleProperty `
+        -Name ("ColorTable{0:00}" -f $(Get-ColorTableNumber $ColorTable)) `
+        -Value (($Red -shl 0) + ($Green -shl 8) + ($Blue -shl 16)) `
+        -Type DWord
 }
 
-Class ConsoleProperties {
-    [byte]$FontSize
+function Edit-BackgroundAndText(
+    [ValidateSet("Screen", "Popup")]$Type, 
+    [ValidateSet(
+    "Black",
+    "DarkBlue",
+    "DarkGreen",
+    "DarkCyan",
+    "DarkRed",
+    "DarkMagenta",
+    "DarkYellow",
+    "Gray",
+    "DarkGray",
+    "Blue",
+    "Green",
+    "Cyan",
+    "Red",
+    "Magenta",
+    "Yellow",
+    "White")]$Background, 
+    [ValidateSet(
+    "Black",
+    "DarkBlue",
+    "DarkGreen",
+    "DarkCyan",
+    "DarkRed",
+    "DarkMagenta",
+    "DarkYellow",
+    "Gray",
+    "DarkGray",
+    "Blue",
+    "Green",
+    "Cyan",
+    "Red",
+    "Magenta",
+    "Yellow",
+    "White")]$Text) {
 
-    [RGB]$Black 
-    [RGB]$DarkBlue 
-    [RGB]$DarkGreen 
-    [RGB]$DarkCyan 
-    [RGB]$DarkRed 
-    [RGB]$DarkMagenta 
-    [RGB]$DarkYellow 
-    [RGB]$Gray 
-    [RGB]$DarkGray 
-    [RGB]$Blue
-    [RGB]$Green 
-    [RGB]$Cyan
-    [RGB]$Red 
-    [RGB]$Magenta 
-    [RGB]$Yellow
-    [RGB]$White
-
-    [BackgroundAndText]$Screen
-    [BackgroundAndText]$Popup
+    Edit-GlobalConsoleProperty `
+        -Name "$($Type)Colors" `
+        -Value (((Get-ColorTableNumber $Background) -shl 4) + (((Get-ColorTableNumber $Text) -shl 0)))  `
+        -Type DWord
 }
 
-function GetDefaultShortcutPath() {
+function Edit-Font([ValidateRange(5, 72)][int]$Size = -1) {
+
+    Edit-GlobalConsoleProperty `
+        -Name 'FontSize' `
+        -Value ($Size -shl 16) `
+        -Type DWord
+}
+
+function Edit-QuickEditMode([ValidateRange(0,1)][int]$QuickEditMode = -1) {
+
+    Edit-GlobalConsoleProperty `
+        -Name 'QuickEdit' `
+        -Value $QuickEditMode  `
+        -Type DWord
+}
+
+function Edit-GlobalConsoleProperty ($Name, $Value, [Microsoft.Win32.RegistryValueKind]$Type)
+{
+    Get-ConsoleRegistryItem | 
+        New-ItemProperty -Name $Name -Value $Value -Force |
+        Out-Null
+
+    #Includes removing the same property from all other child properties so this new property takes precedence
+    Get-ConsoleRegistryItem | 
+        Get-ChildItem | 
+        foreach { 
+            Remove-ItemProperty -Path $_.PSPath -Name $Name -ErrorAction SilentlyContinue
+        }
+}
+
+
+#Powershell Shortcut when using Windows-X, I
+function Get-PowershellDefaultShortcutPath {
     return Join-Path $env:APPDATA '\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\Windows PowerShell.lnk'
 }
 
+#If you 'Pin' powershell to the task bar this shortcut will be created
+function Get-PowershellTaskbarShortcutPath {
+    return Join-Path $env:APPDATA '\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Windows PowerShell.lnk'
+}
 
-#Currently only supports editing the Powershell Shortcut File, not the Registry Settings
-function WriteConsoleProperties([string]$ShortcutPath, [ConsoleProperties]$Properties) {
-    if ([String]::IsNullOrEmpty($ShortcutPath))
+function New-Shortcut($ShortcutPath, [string]$WorkingDirectory, [switch]$NoLogo)
+{
+    Write-Host $ShortcutPath -ForegroundColor Yellow
+    Remove-Item $ShortcutPath
+    $shell = New-Object -ComObject WScript.Shell 
+    $shortcut = $shell.CreateShortcut($ShortcutPath)
+    
+    $shortcut.TargetPath = (Get-Command powershell.exe).Definition
+
+
+    $shortcut.WorkingDirectory = $WorkingDirectory
+    if (Test-Path ([Environment]::ExpandEnvironmentVariables($WorkingDirectory)) -PathType Container)
     {
-        $ShortcutPath = GetDefaultShortcutPath
-    }
-
-    $stream = [System.IO.FileStream]::new($ShortcutPath, [System.IO.FileMode]::Open)
-
-    function WriteByte ($byte, $position) {
-        $stream.Position = $position
-        $stream.WriteByte($byte)
-    }
-
-    function WriteRGB([RGB]$rgb) {
-        if ($rgb -ne $null) {
-            $stream.WriteByte($rgb.Red)
-            $stream.WriteByte($rgb.Green)
-            $stream.WriteByte($rgb.Blue)
-            $stream.WriteByte(0)
-        }
-        else {
-            $stream.Position += 4
-        }
-    }
-
-    function WriteBackgroundAndText([BackgroundAndText]$bANDt) {
-        if ($bANDt -ne $null -and $bANDt.Background -ne [ColorTable]::Null -and $bANDt.Text -ne [ColorTable]::Null) {
-            $stream.WriteByte($bANDt.ToByte())
-        }
-    }
-
-    if (PositionAtColors($stream)) {
-        WriteRGB $properties.Black
-        WriteRGB $properties.DarkBlue
-        WriteRGB $properties.DarkGreen
-        WriteRGB $properties.DarkCyan
-        WriteRGB $properties.DarkRed
-        WriteRGB $properties.DarkMagenta
-        WriteRGB $properties.DarkYellow
-        WriteRGB $properties.Gray
-        WriteRGB $properties.DarkGray
-        WriteRGB $properties.Blue
-        WriteRGB $properties.Green
-        WriteRGB $properties.Cyan
-        WriteRGB $properties.Red
-        WriteRGB $properties.Magenta
-        WriteRGB $properties.Yellow
-        WriteRGB $properties.White
+        $shortcut.WorkingDirectory = $WorkingDirectory
     }
     else {
-        Write-Host 'Color Table not found in the shortcut and was not updated' -ForegroundColor Red
+        $shortcut.WorkingDirectory = "%USERPROFILE%"
+        Write-Host 'Cannot find ' -ForegroundColor Red -NoNewline
+        Write-Host $WorkingDirectory -ForegroundColor Yellow -NoNewline
+        Write-Host ". Setting Working Directory to User Profile" -ForegroundColor Red
     }
 
-    if ($properties.FontSize -ge 5 -and $properties.FontSize -le 72) {
-        if (PositionAtFontSize($stream)) {
-            $stream.WriteByte($properties.FontSize)
-        }
-        else {
-           Write-Host 'Font Size not found in shortcut and was not updated' -ForegroundColor Red
-        }
-    }
-
-    if (PositionAtScreenBackgroundAndText($stream)) {
-        WriteBackgroundAndText $properties.Screen
-    }
-    else {
-        Write-Host 'Screen Background and Text not found in shortcut and was not updated' -ForegroundColor Red
+    if ($NoLogo)
+    {
+        $shortcut.Arguments += '-NoLogo'
     }
     
-    if (PositionAtPopupBackgroundAndText($stream)) {
-        WriteBackgroundAndText $properties.Popup
-    }
-    else {
-        Write-Host 'Popup Background and Text not found in shortcut and was not updated' -ForegroundColor Red
-    }
-
-    $stream.Dispose()
+    $shortcut.Save()
 }
 
-function PositionAtColors($stream) {
-    $stream.Position = 0
-    $arr = [Array]::CreateInstance([byte], 31)
-    $currentPosition = -1
-    do
-    {
-        $stream.Position = $currentPosition + 1
-        $newPosition = 0
-        while ($stream.ReadByte() -ne 25)
-        {
-            $currentPosition = $stream.Position;
-            if ($newPosition++ -eq $currentPosition)
-            {
-                return $false
-            }
-
-        }
-        $stream.Read($arr, 0, 31) | Out-Null
-    } while ($arr[19] -ne 50 -or $arr[23] -ne 4)
-
-    return $true
-}
-
-function PositionAtFontSize($stream) {
-    $stream.Position = 0
-    $arr = [Array]::CreateInstance([byte], 38)
-    $currentPosition = -1
-    do
-    {
-        $stream.Position = $currentPosition + 1
-        $newPosition = 0
-        while ($stream.ReadByte() -ne 28)
-        {
-            $currentPosition = $stream.Position
-            if ($newPosition++ -eq $currentPosition)
-            {
-                return $false
-            }
-
-        }
-        $stream.Read($arr, 0, 38) | Out-Null
-    } while ($arr[0] -ne 196 `
-        -or $arr[1] -ne 45 `
-        -or $arr[2] -ne 244 `
-        -or $arr[3] -ne 11 `
-        -or $arr[4] -ne 204)
-
-    return $true
-}
-
-function PositionAtScreenBackgroundAndText($stream) {
-    $stream.Position = 0
-    $arr = [Array]::CreateInstance([byte], 12)
-    $currentPosition = -1
-    do
-    {
-        $stream.Position = $currentPosition + 1
-        $newPosition = 0
-        while ($stream.ReadByte() -ne 28)
-        {
-            $currentPosition = $stream.Position
-            if ($newPosition++ -eq $currentPosition)
-            {
-                return $false
-            }
-
-        }
-        $stream.Read($arr, 0, 12) | Out-Null
-    } while ($arr[0] -ne 196 `
-        -or $arr[1] -ne 45 `
-        -or $arr[2] -ne 244 `
-        -or $arr[3] -ne 11 `
-        -or $arr[4] -ne 204)
-
-    return $true
-}
-
-function PositionAtPopupBackgroundAndText($stream) {
-    $stream.Position = 0
-    $arr = [Array]::CreateInstance([byte], 14)
-    $currentPosition = -1
-    do
-    {
-        $stream.Position = $currentPosition + 1
-        $newPosition = 0
-        while ($stream.ReadByte() -ne 28)
-        {
-            $currentPosition = $stream.Position
-            if ($newPosition++ -eq $currentPosition)
-            {
-                return $false
-            }
-
-        }
-        $stream.Read($arr, 0, 14) | Out-Null
-    } while ($arr[0] -ne 196 `
-        -or $arr[1] -ne 45 `
-        -or $arr[2] -ne 244 `
-        -or $arr[3] -ne 11 `
-        -or $arr[4] -ne 204)
-
-    return $true
-}

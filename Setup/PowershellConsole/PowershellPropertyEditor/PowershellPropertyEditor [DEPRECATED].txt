@@ -1,0 +1,259 @@
+## This file was used to edit the shortcut directory. 
+## However you can also make edits to the Registry HKCU:/Console and make a new shortcut to get the exact same output
+## This file is being kept for potential reuse later but will most likely be deleted
+
+Class RGB {
+    [byte]$Red
+    [byte]$Green
+    [byte]$Blue
+
+    RGB([object[]] $arr) { 
+        $this.Red = $arr[0]
+        $this.Green = $arr[1] 
+        $this.Blue = $arr[2]
+    }
+    
+    [string]ToString() { return "$this.Red, $this.Green, $this.Blue" }
+}
+
+Enum ColorTable {
+    Null = -1
+    Black
+    DarkBlue
+    DarkGreen
+    DarkCyan
+    DarkRed
+    DarkMagenta
+    DarkYellow
+    Gray
+    DarkGray
+    Blue
+    Green
+    Cyan
+    Red
+    Magenta
+    Yellow
+    White
+}
+
+Class BackgroundAndText {
+    [ColorTable]$Background = [ColorTable]::Null
+    [ColorTable]$Text = [ColorTable]::Null
+
+    [byte]ToByte() { 
+        return (([byte]$this.Background -shl 4) + [byte]$this.Text) 
+    }
+}
+
+Class ConsoleProperties {
+    [byte]$FontSize
+
+    [RGB]$Black 
+    [RGB]$DarkBlue 
+    [RGB]$DarkGreen 
+    [RGB]$DarkCyan 
+    [RGB]$DarkRed 
+    [RGB]$DarkMagenta 
+    [RGB]$DarkYellow 
+    [RGB]$Gray 
+    [RGB]$DarkGray 
+    [RGB]$Blue
+    [RGB]$Green 
+    [RGB]$Cyan
+    [RGB]$Red 
+    [RGB]$Magenta 
+    [RGB]$Yellow
+    [RGB]$White
+
+    [BackgroundAndText]$Screen
+    [BackgroundAndText]$Popup
+}
+
+function GetDefaultShortcutPath() {
+    return Join-Path $env:APPDATA '\Microsoft\Windows\Start Menu\Programs\Windows PowerShell\Windows PowerShell.lnk'
+}
+
+
+#Currently only supports editing the Powershell Shortcut File, not the Registry Settings
+function WriteConsoleProperties([string]$ShortcutPath, [ConsoleProperties]$Properties) {
+    if ([String]::IsNullOrEmpty($ShortcutPath))
+    {
+        $ShortcutPath = GetDefaultShortcutPath
+    }
+
+    $stream = [System.IO.FileStream]::new($ShortcutPath, [System.IO.FileMode]::Open)
+
+    function WriteByte ($byte, $position) {
+        $stream.Position = $position
+        $stream.WriteByte($byte)
+    }
+
+    function WriteRGB([RGB]$rgb) {
+        if ($rgb -ne $null) {
+            $stream.WriteByte($rgb.Red)
+            $stream.WriteByte($rgb.Green)
+            $stream.WriteByte($rgb.Blue)
+            $stream.WriteByte(0)
+        }
+        else {
+            $stream.Position += 4
+        }
+    }
+
+    function WriteBackgroundAndText([BackgroundAndText]$bANDt) {
+        if ($bANDt -ne $null -and $bANDt.Background -ne [ColorTable]::Null -and $bANDt.Text -ne [ColorTable]::Null) {
+            $stream.WriteByte($bANDt.ToByte())
+        }
+    }
+
+    if (PositionAtColors($stream)) {
+        WriteRGB $properties.Black
+        WriteRGB $properties.DarkBlue
+        WriteRGB $properties.DarkGreen
+        WriteRGB $properties.DarkCyan
+        WriteRGB $properties.DarkRed
+        WriteRGB $properties.DarkMagenta
+        WriteRGB $properties.DarkYellow
+        WriteRGB $properties.Gray
+        WriteRGB $properties.DarkGray
+        WriteRGB $properties.Blue
+        WriteRGB $properties.Green
+        WriteRGB $properties.Cyan
+        WriteRGB $properties.Red
+        WriteRGB $properties.Magenta
+        WriteRGB $properties.Yellow
+        WriteRGB $properties.White
+    }
+    else {
+        Write-Host 'Color Table not found in the shortcut and was not updated' -ForegroundColor Red
+    }
+
+    if ($properties.FontSize -ge 5 -and $properties.FontSize -le 72) {
+        if (PositionAtFontSize($stream)) {
+            $stream.WriteByte($properties.FontSize)
+        }
+        else {
+           Write-Host 'Font Size not found in shortcut and was not updated' -ForegroundColor Red
+        }
+    }
+
+    if (PositionAtScreenBackgroundAndText($stream)) {
+        WriteBackgroundAndText $properties.Screen
+    }
+    else {
+        Write-Host 'Screen Background and Text not found in shortcut and was not updated' -ForegroundColor Red
+    }
+    
+    if (PositionAtPopupBackgroundAndText($stream)) {
+        WriteBackgroundAndText $properties.Popup
+    }
+    else {
+        Write-Host 'Popup Background and Text not found in shortcut and was not updated' -ForegroundColor Red
+    }
+
+    $stream.Dispose()
+}
+
+function PositionAtColors($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 31)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 25)
+        {
+            $currentPosition = $stream.Position;
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 31) | Out-Null
+    } while ($arr[19] -ne 50 -or $arr[23] -ne 4)
+
+    return $true
+}
+
+function PositionAtFontSize($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 38)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 38) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
+}
+
+function PositionAtScreenBackgroundAndText($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 12)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 12) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
+}
+
+function PositionAtPopupBackgroundAndText($stream) {
+    $stream.Position = 0
+    $arr = [Array]::CreateInstance([byte], 14)
+    $currentPosition = -1
+    do
+    {
+        $stream.Position = $currentPosition + 1
+        $newPosition = 0
+        while ($stream.ReadByte() -ne 28)
+        {
+            $currentPosition = $stream.Position
+            if ($newPosition++ -eq $currentPosition)
+            {
+                return $false
+            }
+
+        }
+        $stream.Read($arr, 0, 14) | Out-Null
+    } while ($arr[0] -ne 196 `
+        -or $arr[1] -ne 45 `
+        -or $arr[2] -ne 244 `
+        -or $arr[3] -ne 11 `
+        -or $arr[4] -ne 204)
+
+    return $true
+}
