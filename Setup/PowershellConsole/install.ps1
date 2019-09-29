@@ -1,4 +1,4 @@
-﻿Import-Module .\PowershellPropertyEditor -Force
+﻿Import-Module $PSScriptRoot\PowershellPropertyEditor -Force
 
 Write-Host "Writing Console Properties" -ForegroundColor Yellow
 
