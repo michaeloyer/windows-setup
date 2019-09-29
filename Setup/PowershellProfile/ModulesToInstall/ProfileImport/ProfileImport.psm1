@@ -1,5 +1,13 @@
 ﻿function ImportForProfile {
     Import-PoshGit
+    Add-Hotkeys
+}
+
+function Add-Hotkeys {
+	if ($PSVersionTable.PSVersion -ge '5.1')
+    {
+        Set-PSReadlineKeyHandler -Chord Alt+F4 -Function ViExit
+    }
 }
 
 function Import-PoshGit {
