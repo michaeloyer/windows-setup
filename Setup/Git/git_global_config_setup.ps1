@@ -8,3 +8,5 @@ Add-GitGlobalConfig -Property color.status.added -Value "green bold"
 Add-GitGlobalConfig -Property color.branch.current -Value "yellow bold reverse"
 Add-GitGlobalConfig -Property color.branch.local -Value "yellow bold"
 Add-GitGlobalConfig -Property color.branch.remote -Value "green bold"
+
+Add-GitGlobalConfig -Property format.pretty -Value "%C(auto)%h%d %s %C(bold yellow)(%C(bold magenta)%cN%Cblue %cr %C(bold green)%cr%C(bold yellow))"
