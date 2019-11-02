@@ -1,0 +1,1 @@
+& $PSScriptRoot\disable_logon_background_blur.ps1
