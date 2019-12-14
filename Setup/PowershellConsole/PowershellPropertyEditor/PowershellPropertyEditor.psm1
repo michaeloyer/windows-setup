@@ -161,8 +161,7 @@ function New-Shortcut($ShortcutPath, [string]$WorkingDirectory, [switch]$NoLogo)
     $shell = New-Object -ComObject WScript.Shell 
     $shortcut = $shell.CreateShortcut($ShortcutPath)
     
-    $shortcut.TargetPath = (Get-Command powershell.exe).Definition
-
+    $shortcut.TargetPath = GetPowershellPath
 
     $shortcut.WorkingDirectory = $WorkingDirectory
     if (Test-Path ([Environment]::ExpandEnvironmentVariables($WorkingDirectory)) -PathType Container)
@@ -182,5 +181,14 @@ function New-Shortcut($ShortcutPath, [string]$WorkingDirectory, [switch]$NoLogo)
     }
     
     $shortcut.Save()
+}
+
+function GetPowershellPath() 
+{
+    return @("$env:ProgramFiles\PowerShell\6\pwsh.exe",
+        "$((Get-Command powershell.exe).Definition)") | 
+    foreach { $(Resolve-Path $_).Path } | 
+    where { Test-Path $_ } | 
+    select -First 1
 }
 
