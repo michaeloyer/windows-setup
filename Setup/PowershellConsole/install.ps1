@@ -1,6 +1,7 @@
-﻿Import-Module $PSScriptRoot\PowershellPropertyEditor -Force
+﻿Import-Module $PSScriptRoot\..\..\Modules\PowershellPropertyEditor -Force
+Import-Module $PSScriptRoot\..\..\Modules\PowershellFiles -Force
 
-Write-Host "Writing Console Properties" -ForegroundColor Yellow
+Write-Host "Writing Console Properties to User Registry" -ForegroundColor Yellow
 
 Edit-Font -Size 18
 
@@ -24,5 +25,6 @@ Edit-Color White -Red 255 -Green 255 -Blue 255
 Edit-BackgroundAndText Screen -Background Black -Text White
 Edit-BackgroundAndText Popup -Background White -Text Black
 
-New-Shortcut -ShortcutPath $(Get-PowershellDefaultShortcutPath) -WorkingDirectory "%USERPROFILE%\Dev" -NoLogo
-New-Shortcut -ShortcutPath $(Get-PowershellTaskbarShortcutPath) -WorkingDirectory "%USERPROFILE%\Dev" -NoLogo
+@((Get-PowershellDefaultShortcutPath), (Get-PowershellTaskbarShortcutPath)) |
+    where { return (Test-Path $_) } |
+    foreach { New-Shortcut -ShortcutPath $_ -WorkingDirectory "%USERPROFILE%\Dev" -NoLogo }
