@@ -1,0 +1,21 @@
+{
+    "name": "Win-Setup",
+    "foreground": "#FFFFFF",
+    "background": "#000000",
+    "black": "#000000",
+    "red": "#C80000",
+    "green": "#008000",
+    "yellow": "#CC7722",
+    "blue": "#0080FF",
+    "purple": "#A000A0",
+    "cyan": "#008080",
+    "white": "#969696",
+    "brightBlack": "#C0C0C0",
+    "brightRed": "#FF0000",
+    "brightGreen": "#00FF00",
+    "brightYellow": "#FFFF00",
+    "brightBlue": "#00AFFF",
+    "brightPurple": "#FF00FF",
+    "brightCyan": "#00FFFF",
+    "brightWhite": "#FFFFFF"
+}
