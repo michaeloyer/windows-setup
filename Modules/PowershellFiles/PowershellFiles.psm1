@@ -53,7 +53,7 @@ function New-Shortcut($ShortcutPath, [string]$WorkingDirectory, [switch]$NoLogo)
 
     if ($NoLogo)
     {
-        $shortcut.Arguments += '-NoLogo'
+        $shortcut.Arguments += '-NoLogo -NoProfile'
     }
     
     $shortcut.Save()
