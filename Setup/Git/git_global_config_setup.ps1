@@ -17,3 +17,6 @@ Add-GitGlobalConfig -Property 'rebase.autoStash' -Value true
 
 Add-GitGlobalConfig -Property 'alias.c' -Value "commit -m"
 Add-GitGlobalConfig -Property 'alias.ac' -Value "!git add . && git commit -m"
+Add-GitGlobalConfig -Property 'alias.chk' -Value "checkout"
+
+Add-GitGlobalConfig -Property 'init.defaultbranch' -Value "main"
