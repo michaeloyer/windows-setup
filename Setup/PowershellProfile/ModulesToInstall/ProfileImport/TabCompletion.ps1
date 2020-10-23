@@ -21,3 +21,17 @@ Register-ArgumentCompleter -CommandName 'ssh' -ScriptBlock {
 		}
 	}
 }
+
+Register-ArgumentCompleter -CommandName 'npm' -ScriptBlock {
+    param($commandName, $wordToComplete)
+
+	switch -regex ($wordToComplete) {
+		'^\s*npm\s+run\s*$' {
+			Get-Content .\package.json -Raw | 
+			ConvertFrom-Json -AsHashtable | 
+			Select -ExpandProperty scripts | 
+			ForEach-Object { $_.Keys } |
+			Sort-Object 
+		}
+	}
+}
