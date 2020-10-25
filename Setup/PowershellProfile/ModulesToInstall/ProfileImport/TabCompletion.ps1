@@ -19,10 +19,13 @@ Register-ArgumentCompleter -CommandName 'ssh' -ScriptBlock {
 	}
 	
 	switch -regex ($wordToComplete) {
+		'-i$' {
+			Get-ChildItem ~/.ssh | Select -ExpandProperty FullName
+		}
 		'\s[\*\w\.]+$' {
 			$partialHost = $($wordToComplete -split ' ' | Select-Object -Last 1)
 			Get-Hosts | Where-Object { $_ -like "$partialHost*" }
-		}	
+		}
 		default { 
 			Get-Hosts 
 		}
