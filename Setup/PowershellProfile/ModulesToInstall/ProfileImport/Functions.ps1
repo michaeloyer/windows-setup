@@ -27,3 +27,38 @@ function GitToSsh {
 		Default { throw "Unsupported git host: $($uri.Host)"}
 	}
 }
+
+function New-TempDirectory() {
+	$arr = 'A'..'Z' + 'a'..'z' + 0..9
+	do {
+		$name = "##" + ((1..8 | ForEach-Object { $arr | Get-Random }) -join '')
+		$dir = Join-Path $env:TEMP dirs $name
+	} while ((Test-Path $dir -PathType Container) -or (-not (New-Item $dir -Force -ItemType Directory -ErrorAction SilentlyContinue)))
+
+	Set-Location $dir
+}
+
+function Get-TempDirectory([string]$Directory, [switch]$cd) {
+	if ($Directory) {
+		$dir = Join-Path $env:TEMP dirs $Directory
+		if ($cd) {
+			Set-Location $dir
+		}
+		else { 
+			$dir
+		}
+	}
+	else {
+		Join-Path $env:TEMP dirs | 
+			Get-ChildItem |
+			Sort-Object LastWriteTime -Descending
+	}
+}
+
+Register-ArgumentCompleter -CommandName "Get-TempDirectory" -ScriptBlock {
+	Join-Path $env:TEMP dirs | 
+		Get-ChildItem |
+		Sort-Object LastWriteTime -Descending |
+		Select-Object -ExpandProperty Name |
+		ForEach-Object { '"' + $_ + '"'}
+}
