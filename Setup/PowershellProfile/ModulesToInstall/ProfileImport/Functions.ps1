@@ -62,3 +62,17 @@ Register-ArgumentCompleter -CommandName "Get-TempDirectory" -ScriptBlock {
 		Select-Object -ExpandProperty Name |
 		ForEach-Object { '"' + $_ + '"'}
 }
+
+function Show-Jwt([string]$jwt) {
+    $parts = $jwt.Replace('-', '+').Replace('_', '/') -split '\.'
+    if ($parts.Length -ne 3) {
+        Write-Error "Invalid JWT '$jwt'"
+    }
+    $header, $payload, $_ = `
+        $parts | ForEach-Object { $_.PadRight($_.Length + (4 - $_.Length % 4) % 4, '=') }
+
+    Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($header))
+        | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Blue
+    Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
+        | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Green
+}
