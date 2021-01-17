@@ -1,0 +1,6 @@
+root=true
+
+[*.{ps1,psm1}]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
