@@ -1,6 +1,7 @@
 Import-Module $PSScriptRoot\GitSetupModule -Force
 
 Add-GitGlobalConfig -Property 'core.editor' -Value 'vim'
+Add-GitGlobalConfig -Property 'core.autocrlf' -Value 'false'
 
 Add-GitGlobalConfig -Property 'color.ui' -Value 'true'
 Add-GitGlobalConfig -Property 'color.status.changed' -Value "magenta bold"
@@ -18,6 +19,6 @@ Add-GitGlobalConfig -Property 'rebase.autoStash' -Value true
 Add-GitGlobalConfig -Property 'alias.c' -Value "commit -m"
 Add-GitGlobalConfig -Property 'alias.ac' -Value "!git add . && git commit -m"
 Add-GitGlobalConfig -Property 'alias.co' -Value "checkout"
-Add-GitGlobalConfig -Property 'alias.nb' -Value "checkout -b"
+Add-GitGlobalConfig -Property 'alias.cob' -Value "checkout -b"
 
 Add-GitGlobalConfig -Property 'init.defaultbranch' -Value "main"
