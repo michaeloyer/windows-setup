@@ -9,8 +9,6 @@ function ex ($Dir) {
     else { explorer $Dir }
 }
 
-Set-Alias npp "C:\Program Files (x86)\Notepad++\notepad++.exe"
-
 function cddev {
     Set-Location $Env:DEV
 }

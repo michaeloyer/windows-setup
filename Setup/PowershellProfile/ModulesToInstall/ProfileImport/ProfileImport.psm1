@@ -3,3 +3,4 @@
 . $PSScriptRoot\Variables.ps1
 . $PSScriptRoot\PoshGit.ps1
 . $PSScriptRoot\TabCompletion.ps1
+. $PSScriptRoot\Aliases.ps1
