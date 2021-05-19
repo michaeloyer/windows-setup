@@ -76,3 +76,17 @@ function Show-Jwt([string]$jwt, [switch]$IncludeHeader) {
     Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
         | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Green
 }
+
+function cdgit() {
+    $Directory = Get-Item .
+    while ($null -ne $Directory -and -not (Test-Path (Join-Path $Directory ".git"))) {
+        $Directory = $Directory.Parent
+    }
+
+    if ($null -ne $Directory) {
+        Set-Location $Directory
+    }
+    else {
+        Write-Host ".git folder not found" -ForegroundColor Yellow
+    }
+}
