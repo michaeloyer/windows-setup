@@ -8,7 +8,7 @@ Install-Module PowerShellGet -Force
 
 if (Test-Command git) {
     #Allowing Prerelease based on Posh-Git Repo Recommendation. Should remove after 1.0.0 is fully released
-    Install-Module Posh-Git -Force -AllowPrerelease
+    Install-Module Posh-Git -Force
 }
 else {
     Write-Host 'git not found in Path, skipping install of Posh-Git'
