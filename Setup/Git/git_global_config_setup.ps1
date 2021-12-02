@@ -31,5 +31,6 @@ Add-GitGlobalConfig -Property 'alias.skipped' -Value '!git ls-files -v | grep ^S
 Add-GitGlobalConfig -Property 'alias.branches' -Value 'for-each-ref --sort=-committerdate refs/heads/ --format=''%(color:bold blue)%(committerdate:short) %(color:bold yellow)%(refname:short)'''
 Add-GitGlobalConfig -Property 'alias.alias' -Value '!git config --list | grep ^alias\. | sed ''s/alias\.//g'' | sed ''s/=/\t/'' | sort | column -t -s $''\t'''
 Add-GitGlobalConfig -Property 'alias.diffs' -Value 'diff --staged'
+Add-GitGlobalConfig -Property 'alias.untrack-ignored' -Value '!git ls-files -i -c --exclude-standard | xargs git rm --cached -q'
 
 Add-GitGlobalConfig -Property 'init.defaultbranch' -Value "main"
