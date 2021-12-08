@@ -61,10 +61,11 @@ Register-ArgumentCompleter -CommandName "Get-TempDirectory" -ScriptBlock {
     ForEach-Object { '"' + $_ + '"' }
 }
 
-function Show-Jwt([string]$jwt, [switch]$IncludeHeader) {
+function Show-Jwt([parameter(ValueFromPipeline)][string]$jwt, [switch]$IncludeHeader) {
     $parts = $jwt.Replace('-', '+').Replace('_', '/') -split '\.'
     if ($parts.Length -ne 3) {
         Write-Error "Invalid JWT '$jwt'"
+        return
     }
     $header, $payload, $_ = `
         $parts | ForEach-Object { $_.PadRight($_.Length + (4 - $_.Length % 4) % 4, '=') }
@@ -75,6 +76,60 @@ function Show-Jwt([string]$jwt, [switch]$IncludeHeader) {
     }
     Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
         | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Green
+}
+
+function New-Jwt(
+    [string]$Secret,
+    [ValidateSet('SHA256', 'SHA512')][string]$Algorithm ='SHA256',
+    [string]$Issuer='https://auth.michaeloyer.dev',
+    [string]$Audience='https://auth.michaeloyer.dev',
+    [DateTime]$IssueOn=[DateTime]::UtcNow,
+    [timespan]$ExpiresIn=[TimeSpan]::FromHours(1),
+    #Order is important due to hashing
+    [System.Collections.Specialized.OrderedDictionary]$Properties = [ordered]@{}
+) {
+    $Header = [ordered]@{
+        'alg' = switch ($Algorithm) {
+            'SHA256' { 'HS256' }
+            'SHA512' { 'HS512' }
+        }
+        'typ'='JWT'
+    } | ConvertTo-Json -Compress
+
+    $IssueTime = [int]$($IssueOn - [DateTime]::UnixEpoch).TotalSeconds
+    $Payload =
+        ($Properties + [ordered]@{
+            "nbf" = $IssueTime
+            "exp" = $IssueTime + [int]$ExpiresIn.TotalSeconds
+            "iat" = $IssueTime
+            "iss" = $Issuer
+            "aud" = $Audience
+        })
+        | ConvertTo-Json -Depth 100 -Compress
+
+    function toBytes([parameter(ValueFromPipeline)][string]$text) {
+        return [System.Text.Encoding]::Utf8.GetBytes($text)
+    }
+
+    function toBase64 ([parameter(ValueFromPipeline=$true)][byte[]]$bytes) {
+        return [System.Convert]::ToBase64String($input)
+    }
+
+    function toWebBase64([parameter(ValueFromPipeline)][string]$base64Text) {
+        return $base64Text.Replace('+', '-').Replace('/', '_').Replace('=','')
+    }
+
+    $Data = "$($Header | toBytes | toBase64 | toWebBase64).$($Payload | toBytes | toBase64 | toWebBase64)"
+
+    $sha = switch ($Algorithm) {
+        'SHA256' { [System.Security.Cryptography.HMACSHA256]::new((toBytes $Secret)) }
+        'SHA512' { [System.Security.Cryptography.HMACSHA512]::new((toBytes $Secret)) }
+    }
+
+    $Signature = $sha.ComputeHash($($Data | toBytes)) | toBase64 | toWebBase64
+    $sha.Dispose()
+
+    return "$Data.$Signature"
 }
 
 function cdgit() {
