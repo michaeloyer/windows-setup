@@ -70,16 +70,42 @@ function Show-Jwt([parameter(ValueFromPipeline)][string]$jwt, [switch]$IncludeHe
     $header, $payload, $_ = `
         $parts | ForEach-Object { $_.PadRight($_.Length + (4 - $_.Length % 4) % 4, '=') }
 
+    function Update-Properties([parameter(ValueFromPipeline)][PSCustomObject]$payload) {
+        function UpdateTimeProperty($seconds) {
+            "$seconds" + ':' + "   ($([DateTime]::UnixEpoch.AddSeconds($seconds).ToLocalTime().ToString('MMM d, h:mm:ss tt')))"
+        }
+
+        if ($null -ne $payload.nbf) {
+            $payload.nbf = UpdateTimeProperty $payload.nbf
+        }
+
+        if ($null -ne $payload.exp) {
+            $expireTime = ([DateTime]::UnixEpoch.AddSeconds($payload.exp) - [DateTime]::UtcNow)
+            $expireOutput =
+                if ($expireTime.TotalSeconds -lt 1)
+                    { 'EXPIRED' }
+                else
+                    { "Expires in $([System.Math]::Floor($expireTime.TotalHours))h $($expireTime.Minutes)m $($expireTime.Seconds)s" }
+            $payload.exp = "$(UpdateTimeProperty $payload.exp)   ($expireOutput)"
+        }
+
+        if ($null -ne $payload.iat) {
+            $payload.iat = UpdateTimeProperty $payload.iat
+        }
+
+        return $payload
+    }
+
     if ($IncludeHeader) {
         Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($header))
             | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Blue
     }
     Write-Host ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($payload))
-        | ConvertFrom-Json | ConvertTo-Json) -ForegroundColor Green
+        | ConvertFrom-Json | Update-Properties | ConvertTo-Json) -ForegroundColor Green
 }
 
 function New-Jwt(
-    [string]$Secret,
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Secret,
     [ValidateSet('SHA256', 'SHA512')][string]$Algorithm ='SHA256',
     [string]$Issuer='https://auth.michaeloyer.dev',
     [string]$Audience='https://auth.michaeloyer.dev',
