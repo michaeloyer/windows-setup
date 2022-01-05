@@ -171,3 +171,58 @@ function cdgit() {
         Write-Host ".git folder not found" -ForegroundColor Yellow
     }
 }
+
+function binify(
+    [Parameter(Mandatory)]
+    [ValidateScript({ Test-Path $_ }, ErrorMessage = "'{0}' does not exist")]
+    [ValidateScript({ (-not [System.String]::IsNullOrWhiteSpace($_)) }, ErrorMessage = "Cannot be empty")]
+    [string]
+    $Path) {
+
+    $BinDirectory = Join-Path $env:LOCALAPPDATA 'bin'
+    if (-not (Test-Path $BinDirectory)) {
+        New-Item -Path $BinDirectory -ItemType Directory | Out-Null
+    }
+
+    if ($BinDirectory -notin $($env:Path -split ';')) {
+        Write-Warning "'$BinDirectory' was not found in your path"
+    }
+
+    $FullPath = $(Resolve-Path $Path).Path
+
+    $Files =
+        if (Test-Path $FullPath -PathType Container) {
+            '*.exe','*.bat','*.cmd','*.ps1' |
+            ForEach-Object { Get-ChildItem $FullPath -File -Filter $_ } |
+            ForEach-Object { @([System.IO.FileInfo]::new($_.FullName)) }
+        }
+        elseif (Test-Path $FullPath -PathType Leaf) {
+            @([System.IO.FileInfo]::new($FullPath))
+        }
+
+
+    function WriteCmdFile([string]$Command, [string]$CmdFile) {
+        "@echo off`n`n$Command" > $CmdFile
+        Write-Host 'Created file ' -NoNewline
+        Write-Host $CmdFile -ForegroundColor Green
+    }
+
+    foreach ($File in $Files) {
+        $Command = """$($File.FullName)"" %*"
+        $CmdFile = Join-Path $BinDirectory "$($File.BaseName).cmd"
+        switch ($File.Extension) {
+            '.exe' { WriteCmdFile $Command $CmdFile }
+            '.bat' { WriteCmdFile $Command $CmdFile }
+            '.cmd' { WriteCmdFile $Command $CmdFile }
+            '.ps1' {
+                if (get-command pwsh -ErrorAction SilentlyContinue) {
+                    WriteCmdFile "pwsh -File $Command" $CmdFile
+                }
+                else {
+                    WriteCmdFile "powershell -File $Command" $CmdFile
+                }
+            }
+            default { Write-Error "Invalid File Extension: $Extension" }
+        }
+    }
+}
