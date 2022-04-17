@@ -9,14 +9,37 @@ function Get-TabCompleteContext($wordToComplete, $commandAst) {
 	$context = ($subCommands -replace ([Regex]::Escape($wordToComplete) + "$"), '').Trim() `
 		-replace '\s+' + [Regex]::Escape($wordToComplete) + "$", ''
 
-	return $context 
+    return $context
+}
+
+Register-ArgumentCompleter -Native -CommandName 'scoop' -ScriptBlock {
+	param($wordToComplete, $commandAst, $cursorPosition)
+
+	$context = Get-TabCompleteContext $wordToComplete $commandAst
+
+	switch ($context) {
+		'update' {
+			$AppList = $(scoop list 6>$null) |
+				Select-Object -ExpandProperty Name
+
+			 @('*') + $AppList |
+				Where-Object { $_ -like "$wordToComplete*" }
+		}
+
+		'' {
+			$(scoop help) |
+				Where-Object { $_.FormatEntryInfo -ne $null } |
+				ForEach-Object { $_.FormatEntryInfo.FormatPropertyFieldList[0].PropertyValue.TrimEnd() } |
+				Where-Object { $_ -like "$wordToComplete*" }
+		}
+	}
 }
 
 Register-ArgumentCompleter -Native -CommandName 'ssh' -ScriptBlock {
 	param($wordToComplete, $commandAst, $cursorPosition)
 
 	$context = Get-TabCompleteContext $wordToComplete $commandAst
-	
+
 	switch ($context) {
 		'-i' {
 			Get-ChildItem ~/.ssh | 
@@ -29,14 +52,14 @@ Register-ArgumentCompleter -Native -CommandName 'ssh' -ScriptBlock {
 			Select-String ^Host -Raw |
 			ForEach-Object { $_ -split '\s+' | Where-Object { -not [string]::IsNullOrEmpty($_) } | Select-Object -Skip 1 } |
 			Sort-Object -Property @{Expression={[ipaddress]::TryParse($_, [ref]$null) }}, @{Expression={$_}}
-			
+
 			$known_hosts =
 			Get-Content ~/.ssh/known_hosts -ErrorAction Ignore |
 			ForEach-Object { $_ -split '\s' | Select-Object -First 1 } |
 			ForEach-Object { $_ -split ',' } |
 			ForEach-Object { $_ -replace '^\[' -replace '\]:\d+$' } |
 			Sort-Object -Property @{Expression={[ipaddress]::TryParse($_, [ref]$null) }}, @{Expression={$_}}
-			
+
 			($ssh_hosts + $known_hosts) |
 			Select-Object -Unique |
 			Where-Object { $_ -like "$wordToComplete*" }
@@ -46,9 +69,9 @@ Register-ArgumentCompleter -Native -CommandName 'ssh' -ScriptBlock {
 
 Register-ArgumentCompleter -Native -CommandName 'npm' -ScriptBlock {
 	param($wordToComplete, $commandAst, $cursorPosition)
-	
+
 	$context = Get-TabCompleteContext $wordToComplete $commandAst
-	
+
 	switch ($context) {
 		'run' {
 			Get-Content .\package.json -Raw -ErrorAction Ignore |
