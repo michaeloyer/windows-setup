@@ -110,3 +110,61 @@ Register-ArgumentCompleter -Native -CommandName 'nvm' -ScriptBlock {
         }
     }
 }
+
+Register-ArgumentCompleter -Native -CommandName 'bw' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $context = Get-TabCompleteContext $wordToComplete $commandAst
+    switch ($context) {
+        '' {
+            return 'get password ', 'lock', 'unlock'
+        }
+        'get' {
+            return 'password '
+        }
+        'get password' {
+            $status = bw status | ConvertFrom-Json | Select-Object -ExpandProperty status
+
+            if ($status -ne 'unlocked') {
+                Write-Host
+                Write-Host "Bitwarden CLI Status: $status" -ForegroundColor Yellow
+                return ' '
+            }
+
+            $items = bw list items --search $wordToComplete |
+            ConvertFrom-Json |
+            Select-Object id, name, @{ Name = 'username'; Expression = { $_.login.username } } | ForEach-Object { "$($_.id) # ($($_.name) | $($_.username))" }
+
+            if ($items.Length -eq 0) {
+                Write-Host
+                Write-Host "# NOT FOUND! #" -ForegroundColor Yellow
+                return ' '
+            }
+            else {
+                return $items
+            }
+        }
+        'get item' {
+            $status = bw status | ConvertFrom-Json | Select-Object -ExpandProperty status
+
+            if ($status -ne 'unlocked') {
+                Write-Host
+                Write-Host "Bitwarden CLI Status: $status" -ForegroundColor Yellow
+                return ' '
+            }
+
+            $items = bw list items --search $wordToComplete |
+            ConvertFrom-Json |
+            Select-Object id, name, @{ Name = 'username'; Expression = { $_.login.username } } | ForEach-Object { "$($_.id) # ($($_.name) | $($_.username))" }
+
+            if ($items.Length -eq 0) {
+                Write-Host
+                Write-Host "# NOT FOUND! #" -ForegroundColor Yellow
+                return ' '
+            }
+            else {
+                return $items
+            }
+        }
+    }
+}
