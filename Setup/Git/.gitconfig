@@ -1,0 +1,59 @@
+[core]
+	editor = vim
+	autocrlf = false
+[push]
+	autoSetupRemote = true
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[fetch]
+	prune = true
+[branch]
+	sort = -committerdate
+[diff]
+	ignoreSpaceAtEol = true
+	algorithm = histogram
+	colorMoved = plain
+	mnemonicPrefix = true
+	renames = true
+[color]
+	ui = true
+[color "status"]
+	changed = magenta bold
+	untracked = magenta bold
+	added = green bold
+[color "branch"]
+	current = yellow bold reverse
+	local = yellow bold
+	remote = green bold
+[format]
+	pretty = %C(auto)%h%d %s %C(bold yellow)(%C(bold magenta)%cN%Cblue %cD %C(bold green)%cr%C(bold yellow))
+[blame]
+	coloring = highlightRecent
+	date = relative
+[color "blame"]
+    highlightRecent = 237, 20 month ago, 238, 19 month ago, 239, 18 month ago, 240, 17 month ago, 241, 16 month ago, 242, 15 month ago, 243, 14 month ago, 244, 13 month ago, 245, 12 month ago, 246, 11 month ago, 247, 10 month ago, 248, 9 month ago, 249, 8 month ago, 250, 7 month ago, 251, 6 month ago, 252, 5 month ago, 253, 4 month ago, 254, 3 month ago, 231, 2 month ago, 230, 1 month ago, 229, 3 weeks ago, 228, 2 weeks ago, 227, 1 week ago, 226
+[column]
+	ui = auto
+[init]
+	defaultbranch = main
+[alias]
+	c = commit -m
+	ac = !git add . && git commit -m
+	co = checkout
+	cob = checkout -b
+	cp = cherry-pick
+	untrack-ignored = !git ls-files -i -c --exclude-standard | xargs git rm --cached -q
+	stashstaged = !git stash push -- $(git diff --staged --name-only)
+	amend = commit --amend --no-edit
+	patch = add --patch
+	bd = branch -d
+	skip = !git update-index --skip-worktree $1
+	unskip = !git update-index --no-skip-worktree $1
+	skipped = !git ls-files -v | grep ^S | cut -d ' ' -f 2-
+	branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(color:bold blue)%(committerdate:short) %(color:bold yellow)%(refname:short)'
+	alias = !git config --list | grep ^alias\\. | sed 's/alias\\.//g' | sed 's/=/\\t/' | sort | column -t -s $'\\t'
+  diffw = diff --ignore-all-space
+	diffs = diff --staged
+	debug = !GIT_TRACE=1 git
