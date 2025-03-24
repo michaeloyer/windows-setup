@@ -7,7 +7,7 @@ function Set-Path([string]$variable, [string]$path) {
         Write-Host "Unable to set " -ForegroundColor Yellow -NoNewLine
         Write-Host ('$' + "$variable") -ForegroundColor Green -NoNewLine
         Write-Host " to " -ForegroundColor Yellow -NoNewLine
-        Write-Host $path -ForegroundColor Yellow
+        Write-Host $path -ForegroundColor Green
     }
 }
 
